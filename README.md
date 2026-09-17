@@ -1,12 +1,10 @@
 # Spark Satellite Weather (iOS)
 
-[![Swift](https://img.shields.io/badge/Swift-5-blue.svg)](https://swift.org)
-[![iOS](https://img.shields.io/badge/iOS-26%2B-green.svg)](https://developer.apple.com/ios/)
-
 Spark Satellite Weather is a **weather demo app**: it shows current conditions, a 7‑day forecast with hourly breakdown, and a rain radar map for your location. The app’s main purpose is to demonstrate **satellite (connection-aware) behaviour**. When the network is **low** (e.g. ultra-constrained or simulated), the app shows **"Status: Low data"** in the status bar—for example the rain map is only loaded when status is Good data. All weather and radar data use the **device location**; there is no fallback if location is unavailable.
 
 ## Table of contents
 
+- [Screenshots](#screenshots)
 - [How to use the app](#how-to-use-the-app)
 - [Satellite connectivity in development and testing](#satellite-connectivity-in-development-and-testing)
 - [Requirements](#requirements)
@@ -15,12 +13,23 @@ Spark Satellite Weather is a **weather demo app**: it shows current conditions, 
 - [Project structure (connectivity and location)](#project-structure-connectivity-and-location)
 - [License](#license)
 
+## Screenshots
+
+**Light and dark themes** — Spark appearance.
+
+<p align="center">
+  <img src="docs/screenshots/light-theme.png" alt="Light theme — home screen with forecast, hourly strip, and rain map" width="280">
+  &nbsp;
+  <img src="docs/screenshots/dark-theme.png" alt="Dark theme — home screen with forecast, hourly strip, and rain map" width="280">
+</p>
+
 ## How to use the app
 
 1. Run the app on a simulator or device (**⌘R**).
 2. Grant **location** permission when prompted.
 3. The app loads weather for the current location. Use **Refresh** to update.
 4. Select a day in the list to see that day’s details and the hourly strip. When connection is **good**, use the rain map (StormMapView) to scrub through radar frames; when low or none, the rain map section shows a placeholder.
+5. Tap **sun** or **moon** in the bottom tab bar to switch between light and dark themes.
 
 ## Satellite connectivity in development and testing
 
@@ -65,7 +74,8 @@ if #available(iOS 26.4, *) {
 | `Connectivity.swift` | Connectivity enum (good/low/none); **`Connectivity(networkPath:)`** respects **`-SimulateConstrainedPath good\|low\|none`** for testing. See [docs/SATELLITE.md](docs/SATELLITE.md). |
 | `Connectivity+Display.swift` | Display helpers: description ("Status: Good/Low/No data"). |
 | `ViewModel.swift` | **WeatherViewModel**: **NetworkPathServiceObserver**; holds **connectivity**, updated in **networkPathDidUpdate(with:)**. Rain map only when **.good**; minimal vs full weather when **.none**. |
-| `ContentView.swift` | Status bar shows connectivity description (Status: Good/Low/No data); rain map (StormMapView) only when **.good**. |
+| `ContentView.swift` | Main weather UI; status bar, forecast, hourly strip, rain map section; theme toggle. |
+| `SparkTheme.swift` | Spark design tokens (`SparkColors`), spacing, radius, typography; light/dark palettes. |
 | `StormMapView.swift` | Rain map UI (MapKit + RainViewer overlay); used when connection is good. |
 | `LocationService.swift` | Core Location and reverse geocoding for weather and radar. |
 | `networking/NetworkPathService.swift` | **NWPathMonitor**; notifies WeatherViewModel when path changes. |
