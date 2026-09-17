@@ -18,17 +18,19 @@ struct ContentView: View {
     
     var body: some View {
         ZStack {
-            Color("background").ignoresSafeArea()
-            VStack(alignment: .center, spacing: 32) {
-                statusBarView
-                weatherCardView
-                hourlyForecastView
-                detailsSectionView
-                Spacer()
+            SparkTheme.Colors.bgCanvas.ignoresSafeArea()
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(alignment: .center, spacing: SparkTheme.Spacing.sm) {
+                    statusBarView
+                    weatherCardView
+                    hourlyForecastView
+                    detailsSectionView
+                }
+                .padding(.top, SparkTheme.Spacing.sm)
+                .padding(.bottom, SparkTheme.Spacing.md)
             }
-            .padding(.top, 60)
-            .padding(.bottom, 20)
         }
+        .tint(SparkTheme.Colors.ctaCyan)
         .task {
             // Location + weather once on appear (same as Android ViewModel init). Refresh uses a fresh fix.
             await viewModel.requestWeather(forceRefreshLocation: false)
@@ -36,40 +38,44 @@ struct ContentView: View {
     }
     
     private var statusBarView: some View {
-        HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 4) {
+        HStack(alignment: .center) {
+            VStack(alignment: .leading, spacing: SparkTheme.Spacing.xs) {
                 Text(viewModel.connectivity.description)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .font(SparkTheme.Typography.planLabel)
+                    .foregroundStyle(SparkTheme.Colors.textInverse)
             }
             Spacer()
             refreshColumn
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.horizontal, SparkTheme.Spacing.md)
+        .padding(.vertical, SparkTheme.Spacing.sm)
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white.opacity(0.2))
+            RoundedRectangle(cornerRadius: SparkTheme.Radius.sm, style: .continuous)
+                .fill(SparkTheme.Colors.bgPlan)
         )
-        .padding(.horizontal, 20)
-        .padding(.bottom, 24)
+        .padding(.horizontal, SparkTheme.Spacing.lg)
     }
     
     private var refreshColumn: some View {
-        VStack(alignment: .trailing, spacing: 6) {
+        VStack(alignment: .trailing, spacing: SparkTheme.Spacing.xs) {
             Button(action: {
                 Task { await viewModel.requestWeather(forceRefreshLocation: true) }
             }) {
                 Text("Refresh")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .underline()
+                    .font(SparkTheme.Typography.planLabel)
+                    .foregroundStyle(SparkTheme.Colors.bgBrand)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, SparkTheme.Spacing.xs)
+                    .background(
+                        Capsule()
+                            .fill(SparkTheme.Colors.ctaCyan)
+                    )
             }
             .buttonStyle(.plain)
             if let at = viewModel.lastWeatherFetchAt {
                 Text(at.formatted(date: .abbreviated, time: .standard))
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.75))
+                    .font(SparkTheme.Typography.micro)
+                    .foregroundStyle(SparkTheme.Colors.textOnDark)
             }
         }
     }
@@ -86,13 +92,14 @@ struct ContentView: View {
                 firstCardContent(selectedDay: day)
             } else {
                 ProgressView()
-                    .tint(.white)
+                    .tint(SparkTheme.Colors.ctaCyan)
                     .scaleEffect(1.2)
+                    .frame(maxWidth: .infinity)
+                    .sparkPlanCard()
             }
         }
-        .frame(minHeight: 160)
-        .padding(.horizontal, 20)
-        .padding(.bottom, 24)
+        .fixedSize(horizontal: false, vertical: true)
+        .padding(.horizontal, SparkTheme.Spacing.lg)
     }
     
     private func firstCardContent(selectedDay: DayForecast) -> some View {
@@ -105,138 +112,156 @@ struct ContentView: View {
         let windValues = hours.compactMap(\.windSpeed10m)
         let windLow = windValues.min()
         let windHigh = windValues.max()
-        return HStack(alignment: .top, spacing: 20) {
-            VStack(spacing: 6) {
+        return HStack(alignment: .top, spacing: SparkTheme.Spacing.sm) {
+            VStack(spacing: 2) {
                 ForEach(viewModel.dailyForecasts, id: \.date) { day in
                     weekDayCell(day: day, isSelected: viewModel.selectedDate == day.date || (viewModel.selectedDate == nil && day.date == viewModel.todayDateString))
                         .onTapGesture { viewModel.selectDay(day.date) }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            VStack(alignment: .trailing, spacing: 8) {
+            VStack(alignment: .trailing, spacing: SparkTheme.Spacing.xs) {
                 Text(viewModel.noLocation ? "No location found" : (viewModel.locationService.placeName ?? "Current location"))
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.9))
+                    .font(SparkTheme.Typography.body)
+                    .foregroundStyle(SparkTheme.Colors.textOnDark)
                     .lineLimit(nil)
                     .multilineTextAlignment(.trailing)
                     .fixedSize(horizontal: false, vertical: true)
                 Image(systemName: WeatherCondition.sfSymbolName(for: selectedDay.weatherCode))
-                    .font(.system(size: 36))
-                    .foregroundStyle(.white.opacity(0.95))
+                    .font(.system(size: 28))
+                    .foregroundStyle(SparkTheme.Colors.textOnDark)
+                    .frame(width: 28, height: 28)
                 Text(String(format: "%.0f°", isToday && current != nil ? current!.temperature2m : selectedDay.maxTemp))
-                    .font(.system(size: 36, weight: .semibold))
-                    .foregroundStyle(.white)
-                Text(String(format: "High %.0f° · Low %.0f°", selectedDay.maxTemp, selectedDay.minTemp))
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.8))
+                    .font(SparkTheme.Typography.display)
+                    .foregroundStyle(SparkTheme.Colors.textOnDark)
+                Text(String(format: "Low %.0f° · High %.0f°", selectedDay.minTemp, selectedDay.maxTemp))
+                    .font(SparkTheme.Typography.sectionDesc)
+                    .foregroundStyle(SparkTheme.Colors.textInverse.opacity(0.85))
                 if let low = precipLow, let high = precipHigh {
                     Text(low == high ? "\(low)% precipitation" : "Precip \(low)–\(high)%")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.8))
+                        .font(SparkTheme.Typography.sectionDesc)
+                        .foregroundStyle(SparkTheme.Colors.textInverse.opacity(0.85))
                 }
                 if let low = windLow, let high = windHigh {
                     Text(low == high ? String(format: "%.0f km/h wind", low) : String(format: "Wind %.0f–%.0f km/h", low, high))
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.8))
+                        .font(SparkTheme.Typography.sectionDesc)
+                        .foregroundStyle(SparkTheme.Colors.textInverse.opacity(0.85))
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .trailing)
+            .frame(width: 128, alignment: .trailing)
         }
-        .padding(.vertical, 16)
-        .foregroundStyle(.white)
+        .sparkPlanCard(padding: SparkTheme.Spacing.md)
     }
     
     private func weekDayCell(day: DayForecast, isSelected: Bool) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 6) {
             Text(day.dayLabel)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(.white.opacity(0.9))
-                .frame(width: 40, alignment: .leading)
+                .font(SparkTheme.Typography.sectionDesc)
+                .foregroundStyle(SparkTheme.Colors.textInverse.opacity(0.9))
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
             Image(systemName: WeatherCondition.sfSymbolName(for: day.weatherCode))
-                .font(.system(size: 16))
-                .foregroundStyle(.white.opacity(0.95))
-                .frame(width: 20, alignment: .center)
-            Spacer()
-            Text(String(format: "%.0f° / %.0f°", day.maxTemp, day.minTemp))
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(size: 14))
+                .foregroundStyle(SparkTheme.Colors.textOnDark)
+                .frame(width: 16, height: 16, alignment: .center)
+            Text(String(format: "%.0f°–%.0f°", day.minTemp, day.maxTemp))
+                .font(SparkTheme.Typography.caption)
+                .fontWeight(.semibold)
+                .foregroundStyle(SparkTheme.Colors.textInverse)
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .frame(maxWidth: .infinity, alignment: .trailing)
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(isSelected ? RoundedRectangle(cornerRadius: 8).fill(Color.white.opacity(0.2)) : nil)
+        .padding(.leading, 10)
+        .padding(.trailing, SparkTheme.Spacing.sm)
+        .padding(.vertical, 4)
+        .background(
+            RoundedRectangle(cornerRadius: SparkTheme.Spacing.sm, style: .continuous)
+                .fill(isSelected ? SparkTheme.Colors.selectedFill : Color.clear)
+        )
         .contentShape(Rectangle())
     }
     
     private var noLocationCardView: some View {
         Text("No location found")
-            .font(.system(size: 15, weight: .medium))
-            .foregroundStyle(.white.opacity(0.9))
+            .font(SparkTheme.Typography.body)
+            .foregroundStyle(SparkTheme.Colors.textOnDark)
             .multilineTextAlignment(.center)
-            .padding(24)
+            .frame(maxWidth: .infinity)
+            .sparkPlanCard()
     }
     
     private var noConnectionCardView: some View {
         Text("No connection. Weather when cellular or satellite is available.")
-            .font(.system(size: 15, weight: .medium))
-            .foregroundStyle(.white.opacity(0.9))
+            .font(SparkTheme.Typography.body)
+            .foregroundStyle(SparkTheme.Colors.textOnDark)
             .multilineTextAlignment(.center)
-            .padding(24)
+            .frame(maxWidth: .infinity)
+            .sparkPlanCard()
     }
     
     private var hourlyForecastView: some View {
         Group {
             if viewModel.connectivity == .none {
                 Text("No connection.")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.85))
+                    .font(SparkTheme.Typography.body)
+                    .foregroundStyle(SparkTheme.Colors.textInverse.opacity(0.85))
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
+                    .padding(.vertical, SparkTheme.Spacing.md)
             } else if viewModel.displayHours.isEmpty {
                 EmptyView()
             } else {
-                VStack(alignment: .leading, spacing: 8) {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 16) {
-                            ForEach(Array(viewModel.displayHours.enumerated()), id: \.element.time) { index, hour in
-                                hourTile(hour: hour, isNow: viewModel.isShowingToday && index == 0)
-                            }
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(alignment: .top, spacing: SparkTheme.Spacing.sm) {
+                        ForEach(Array(viewModel.displayHours.enumerated()), id: \.element.time) { index, hour in
+                            hourTile(hour: hour, isNow: viewModel.isShowingToday && index == 0)
                         }
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 8)
                     }
-                    .frame(height: 100)
+                    .padding(.horizontal, SparkTheme.Spacing.lg)
                 }
+                .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .padding(.top, 8)
-        .padding(.bottom, 8)
     }
     
     private func hourTile(hour: HourForecast, isNow: Bool = false) -> some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 3) {
             Text(isNow ? "Now" : hour.hourLabel)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.white.opacity(0.9))
+                .font(SparkTheme.Typography.caption)
+                .foregroundStyle(SparkTheme.Colors.textInverse.opacity(0.9))
             Image(systemName: WeatherCondition.sfSymbolName(for: hour.weatherCode))
-                .font(.system(size: 22))
-                .foregroundStyle(.white.opacity(0.95))
-                .frame(width: 28, alignment: .center)
+                .font(.system(size: 18))
+                .foregroundStyle(SparkTheme.Colors.textOnDark)
+                .frame(width: 20, height: 20, alignment: .center)
             Text(String(format: "%.0f°", hour.temperature))
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(.white)
+                .font(SparkTheme.Typography.planLabel)
+                .foregroundStyle(SparkTheme.Colors.textOnDark)
             if let precip = hour.precipitationProbability {
                 Text("\(precip)%")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.8))
+                    .font(SparkTheme.Typography.micro)
+                    .foregroundStyle(SparkTheme.Colors.textInverse.opacity(0.8))
             }
             if let wind = hour.windSpeed10m {
                 Text(String(format: "%.0f km/h", wind))
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.8))
+                    .font(SparkTheme.Typography.micro)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                    .foregroundStyle(SparkTheme.Colors.textInverse.opacity(0.8))
             }
         }
-        .frame(width: 56)
-        .padding(.vertical, 8)
-        .background(RoundedRectangle(cornerRadius: 12).fill(Color.white.opacity(0.15)))
+        .frame(width: 62)
+        .padding(.vertical, SparkTheme.Spacing.sm)
+        .background(
+            RoundedRectangle(cornerRadius: SparkTheme.Radius.sm, style: .continuous)
+                .fill(SparkTheme.Colors.bgPlan)
+        )
+        .overlay {
+            if isNow {
+                RoundedRectangle(cornerRadius: SparkTheme.Radius.sm, style: .continuous)
+                    .fill(SparkTheme.Colors.selectedFill)
+            }
+        }
     }
     
     private var detailsSectionView: some View {
@@ -251,8 +276,7 @@ struct ContentView: View {
                 stormMapView
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 0)
+        .padding(.horizontal, SparkTheme.Spacing.lg)
     }
     
     /// Visible only when connectivity == .good.
@@ -261,27 +285,26 @@ struct ContentView: View {
     }
     
     private var weatherErrorView: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: SparkTheme.Spacing.sm) {
             Image(systemName: "cloud.slash.fill")
                 .font(.system(size: 36))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(SparkTheme.Colors.textOnDark)
+                .frame(width: 36, height: 36)
             Text("Unable to load weather")
-                .font(.system(size: 16, weight: .medium))
+                .font(SparkTheme.Typography.productName)
         }
-        .padding(24)
-        .foregroundStyle(.secondary)
+        .foregroundStyle(SparkTheme.Colors.textInverse)
+        .frame(maxWidth: .infinity)
+        .sparkPlanCard()
     }
     
     private func detailsPlaceholderView(_ text: String) -> some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color.white.opacity(0.15))
-            Text(text)
-                .font(.system(size: 14, weight: .medium))
-                .multilineTextAlignment(.center)
-                .foregroundStyle(.white)
-                .padding()
-        }
+        Text(text)
+            .font(SparkTheme.Typography.body)
+            .multilineTextAlignment(.center)
+            .foregroundStyle(SparkTheme.Colors.textInverse)
+            .frame(maxWidth: .infinity)
+            .sparkPlanCard()
     }
     
 }

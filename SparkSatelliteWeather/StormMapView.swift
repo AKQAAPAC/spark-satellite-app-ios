@@ -12,7 +12,7 @@ struct StormMapView: View {
 
     var coordinate: CLLocationCoordinate2D?
 
-    private static let mapHeight: CGFloat = 180
+    private static let mapHeight: CGFloat = 148
     private static let mapSpan = MKCoordinateSpan(latitudeDelta: 1.0, longitudeDelta: 1.0)
 
     private static let timeFormatter: DateFormatter = {
@@ -36,20 +36,19 @@ struct StormMapView: View {
     }
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: SparkTheme.Spacing.sm) {
             HStack {
                 Text("Today Rain Map")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(SparkTheme.Typography.productName)
                 Spacer()
             }
-            .foregroundStyle(.white.opacity(0.95))
-            .padding(.horizontal, 4)
+            .foregroundStyle(SparkTheme.Colors.textInverse)
             if coordinate != nil {
                 ZStack(alignment: .center) {
                     Map(position: $mapPosition, interactionModes: .zoom)
                         .mapStyle(.imagery)
                         .frame(height: Self.mapHeight)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .clipShape(RoundedRectangle(cornerRadius: SparkTheme.Radius.sm, style: .continuous))
                     if let url = currentFrameURL {
                         AsyncImage(url: url) { phase in
                             switch phase {
@@ -62,17 +61,17 @@ struct StormMapView: View {
                                 EmptyView()
                             case .empty:
                                 ProgressView()
-                                    .tint(.white)
+                                    .tint(SparkTheme.Colors.ctaCyan)
                             @unknown default:
                                 EmptyView()
                             }
                         }
                         .frame(height: Self.mapHeight)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .clipShape(RoundedRectangle(cornerRadius: SparkTheme.Radius.sm, style: .continuous))
                         .allowsHitTesting(false)
                     } else {
                         ProgressView()
-                            .tint(.white)
+                            .tint(SparkTheme.Colors.ctaCyan)
                     }
                 }
                 if !frames.isEmpty {
@@ -81,25 +80,24 @@ struct StormMapView: View {
                 HStack(spacing: 6) {
                     if let time = selectedFrameTime {
                         Text(Self.timeFormatter.string(from: time))
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(.white.opacity(0.7))
+                            .font(SparkTheme.Typography.micro)
+                            .foregroundStyle(SparkTheme.Colors.textOnDark)
                     }
                     Text("·")
-                        .foregroundStyle(.white.opacity(0.5))
+                        .foregroundStyle(SparkTheme.Colors.textOnDark.opacity(0.7))
                     Text("Radar · RainViewer")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.6))
+                        .font(SparkTheme.Typography.micro)
+                        .foregroundStyle(SparkTheme.Colors.textOnDark.opacity(0.8))
                 }
             } else {
                 Text("No location found")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(.white)
+                    .font(SparkTheme.Typography.body)
+                    .foregroundStyle(SparkTheme.Colors.textInverse)
                     .frame(height: Self.mapHeight)
                     .frame(maxWidth: .infinity)
             }
         }
-        .padding(16)
-        .background(RoundedRectangle(cornerRadius: 20).fill(Color.white.opacity(0.15)))
+        .sparkPlanCard()
         .onAppear { updateMapPosition() }
         .onChange(of: coordinate?.latitude) { updateMapPosition() }
         .onChange(of: coordinate?.longitude) { updateMapPosition() }
@@ -119,8 +117,8 @@ struct StormMapView: View {
         let range = Double(max(0, count - 1))
         return HStack(spacing: 12) {
             Text("Older")
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(.white.opacity(0.5))
+                .font(SparkTheme.Typography.micro)
+                .foregroundStyle(SparkTheme.Colors.textOnDark)
             Slider(
                 value: Binding(
                     get: { count > 0 ? Double(selectedFrameIndex) : 0 },
@@ -128,10 +126,10 @@ struct StormMapView: View {
                 ),
                 in: 0...max(0, range)
             )
-            .tint(.white.opacity(0.8))
+            .tint(SparkTheme.Colors.ctaCyan)
             Text("Newer")
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(.white.opacity(0.5))
+                .font(SparkTheme.Typography.micro)
+                .foregroundStyle(SparkTheme.Colors.textOnDark)
         }
     }
 
