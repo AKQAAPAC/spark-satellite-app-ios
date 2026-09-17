@@ -25,7 +25,7 @@ Spark Satellite Weather is a **weather demo app**: it shows current conditions, 
 ## Satellite connectivity in development and testing
 
 - **What you see:** The status bar shows **"Status: Good data"** / **"Status: Low data"** / **"Status: No data"**, aligned with what you get: full map and forecast (Good), reduced e.g. no rain map (Low), or minimal data (No).
-- **iPhone, iOS 26.4+, and real satellite HTTP:** Weather requests use **`NetworkURLSessionHTTPClient`**, which sets **`URLSessionConfiguration.allowsConstrainedNetworkAccess`** and **`allowsExpensiveNetworkAccess`**, and on **iOS 26.4 and later** also **`allowsUltraConstrainedNetworkAccess = true`** so Open-Meteo can run over Spark / satellite paths when the system allows it. Build with **Xcode 26.4+** so that API is available; you still need the **carrier-constrained entitlements** and App ID capability described in **[docs/SATELLITE.md](docs/SATELLITE.md)**.
+- **iPhone, iOS 26.4+, and real satellite HTTP:** Weather requests use **`NetworkURLSessionHTTPClient`**, which sets **`URLSessionConfiguration.allowsConstrainedNetworkAccess`** and **`allowsExpensiveNetworkAccess`**, and on **iOS 26.4 and later** also **`allowsUltraConstrainedNetworkAccess = true`** so Open-Meteo can run over Spark / satellite paths when the system allows it. Build with **Xcode 26.4+** (verified on **Xcode 27**) so that API is available; you still need the **carrier-constrained entitlements** and App ID capability described in **[docs/SATELLITE.md](docs/SATELLITE.md)**.
 
 ```swift
 if #available(iOS 26.4, *) {
@@ -44,8 +44,8 @@ if #available(iOS 26.4, *) {
 
 ## Requirements
 
-- **Xcode** — **26.4 or newer** recommended for Spark satellite and **`allowsUltraConstrainedNetworkAccess`** (see above).
-- **iOS** — Deployment target is set in the project (badge shows **iOS 26+**). **iOS 26.4+** on device is the recommended baseline for Spark satellite with the ultra-constrained URLSession path.
+- **Xcode** — **26.4 or newer** for Spark satellite and **`allowsUltraConstrainedNetworkAccess`** (see above). Verified on **Xcode 27** / iOS 27 SDK; no project changes required to open or run.
+- **iOS** — Deployment target remains **iOS 26+** (runs on iOS 27). **iOS 26.4+** on device is the recommended baseline for Spark satellite with the ultra-constrained URLSession path.
 - **Location permission** — For weather and rain map.
 
 ## Installation
