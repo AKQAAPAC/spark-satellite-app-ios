@@ -7,29 +7,72 @@
 //
 
 import SwiftUI
+import UIKit
+
+enum SparkAppearance: String {
+    static let storageKey = "sparkColorScheme"
+
+    case light
+    case dark
+
+    var colorScheme: ColorScheme { self == .light ? .light : .dark }
+
+    static func fromStorage(_ raw: String) -> SparkAppearance {
+        SparkAppearance(rawValue: raw) ?? .dark
+    }
+}
+
+struct SparkColors: Equatable {
+    let bgCanvas: Color
+    let bgBrand: Color
+    let bgPlan: Color
+    let bgPrimarySubtle: Color
+    let textInverse: Color
+    let textOnDark: Color
+    let ctaCyan: Color
+    let ctaSubmit: Color
+
+    var selectedFill: Color { ctaCyan.opacity(0.28) }
+
+    static let light = SparkColors(
+        bgCanvas: Color(sparkRed: 0xFF, green: 0xFF, blue: 0xFF),
+        bgBrand: Color(sparkRed: 0x40, green: 0x0E, blue: 0x7D),
+        bgPlan: Color(sparkRed: 0xEE, green: 0xED, blue: 0xF0),
+        bgPrimarySubtle: Color(sparkRed: 0xE6, green: 0xDD, blue: 0xFD),
+        textInverse: Color(sparkRed: 0x24, green: 0x24, blue: 0x2E),
+        textOnDark: Color(sparkRed: 0x40, green: 0x0E, blue: 0x7D),
+        ctaCyan: Color(sparkRed: 0x2D, green: 0xF4, blue: 0xE4),
+        ctaSubmit: Color(sparkRed: 0x89, green: 0x50, blue: 0xDA)
+    )
+
+    static let dark = SparkColors(
+        bgCanvas: Color(sparkRed: 0x1A, green: 0x08, blue: 0x31),
+        bgBrand: Color(sparkRed: 0x40, green: 0x0E, blue: 0x7D),
+        bgPlan: Color(sparkRed: 0x35, green: 0x05, blue: 0x70),
+        bgPrimarySubtle: Color(sparkRed: 0xE6, green: 0xDD, blue: 0xFD),
+        textInverse: Color(sparkRed: 0xFF, green: 0xFF, blue: 0xFF),
+        textOnDark: Color(sparkRed: 0xE6, green: 0xDD, blue: 0xFD),
+        ctaCyan: Color(sparkRed: 0x2D, green: 0xF4, blue: 0xE4),
+        ctaSubmit: Color(sparkRed: 0x89, green: 0x50, blue: 0xDA)
+    )
+
+    static func palette(_ appearance: SparkAppearance) -> SparkColors {
+        appearance == .light ? .light : .dark
+    }
+}
+
+private struct SparkColorsKey: EnvironmentKey {
+    static let defaultValue = SparkColors.dark
+}
+
+extension EnvironmentValues {
+    var sparkColors: SparkColors {
+        get { self[SparkColorsKey.self] }
+        set { self[SparkColorsKey.self] = newValue }
+    }
+}
 
 enum SparkTheme {
-
-    enum Colors {
-        /// spark/focus-bg — `#1A0831` (dark PLP page)
-        static let bgCanvas = Color("SparkBgCanvas")
-        /// color/bg/brand — `#400E7D`
-        static let bgBrand = Color("SparkBgBrand")
-        /// color/bg/plp-plan — `#350570`
-        static let bgPlan = Color("SparkBgPlan")
-        /// color/bg/primary-subtle — `#E6DDFD`
-        static let bgPrimarySubtle = Color("SparkBgPrimarySubtle")
-        /// color/text/inverse
-        static let textInverse = Color("SparkTextInverse")
-        /// spark/primary-subtle on dark plan cards
-        static let textOnDark = Color("SparkTextOnDark")
-        /// color/cta/cyan — `#2DF4E4`
-        static let ctaCyan = Color("SparkCtaCyan")
-        /// color/cta/submit — `#8950DA`
-        static let ctaSubmit = Color("SparkCtaSubmit")
-        /// Selected / current-state wash. `color/cta/cyan` on `color/bg/plp-plan`.
-        static let selectedFill = Color("SparkCtaCyan").opacity(0.28)
-    }
 
     enum Spacing {
         static let xs: CGFloat = 4
@@ -66,13 +109,58 @@ enum SparkTheme {
     }
 }
 
+private extension Color {
+    init(sparkRed red: Int, green: Int, blue: Int) {
+        self.init(
+            red: Double(red) / 255,
+            green: Double(green) / 255,
+            blue: Double(blue) / 255
+        )
+    }
+}
+
+/// Keeps the system status bar (time, battery, signal) in sync with the in-app Spark theme.
+enum SparkWindowAppearance {
+    static func apply(_ appearance: SparkAppearance) {
+        let style: UIUserInterfaceStyle = appearance == .dark ? .dark : .light
+        DispatchQueue.main.async {
+            UIApplication.shared.connectedScenes
+                .compactMap { $0 as? UIWindowScene }
+                .flatMap(\.windows)
+                .forEach { $0.overrideUserInterfaceStyle = style }
+        }
+    }
+}
+
 extension View {
     func sparkPlanCard(radius: CGFloat = SparkTheme.Radius.md, padding: CGFloat = SparkTheme.Spacing.card) -> some View {
-        self
+        modifier(SparkPlanCardModifier(radius: radius, padding: padding))
+    }
+
+    func sparkAppearance(_ appearance: SparkAppearance) -> some View {
+        let colors = SparkColors.palette(appearance)
+        return self
+            .environment(\.sparkColors, colors)
+            .preferredColorScheme(appearance.colorScheme)
+            .tint(colors.ctaCyan)
+            .onAppear { SparkWindowAppearance.apply(appearance) }
+            .onChange(of: appearance) { _, newValue in
+                SparkWindowAppearance.apply(newValue)
+            }
+    }
+}
+
+private struct SparkPlanCardModifier: ViewModifier {
+    @Environment(\.sparkColors) private var colors
+    var radius: CGFloat
+    var padding: CGFloat
+
+    func body(content: Content) -> some View {
+        content
             .padding(padding)
             .background(
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .fill(SparkTheme.Colors.bgPlan)
+                    .fill(colors.bgPlan)
             )
     }
 }
