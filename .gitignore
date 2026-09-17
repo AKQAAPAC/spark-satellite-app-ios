@@ -1,6 +1,10 @@
 # Xcode
 build/
 DerivedData/
+
+# Local distribution / archive outputs (not source)
+*.ipa
+*.xcarchive/
 *.pbxuser
 !default.pbxuser
 *.mode1v3
