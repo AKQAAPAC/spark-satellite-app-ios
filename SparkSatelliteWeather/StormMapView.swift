@@ -6,13 +6,16 @@
 import SwiftUI
 import MapKit
 import CoreLocation
+import UIKit
 
 /// Shown only when connectivity == .good.
 struct StormMapView: View {
 
+    @Environment(\.sparkColors) private var colors
+
     var coordinate: CLLocationCoordinate2D?
 
-    private static let mapHeight: CGFloat = 180
+    private static let mapHeight: CGFloat = 148
     private static let mapSpan = MKCoordinateSpan(latitudeDelta: 1.0, longitudeDelta: 1.0)
 
     private static let timeFormatter: DateFormatter = {
@@ -36,20 +39,19 @@ struct StormMapView: View {
     }
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: SparkTheme.Spacing.sm) {
             HStack {
                 Text("Today Rain Map")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(SparkTheme.Typography.productName)
                 Spacer()
             }
-            .foregroundStyle(.white.opacity(0.95))
-            .padding(.horizontal, 4)
+            .foregroundStyle(colors.textInverse)
             if coordinate != nil {
                 ZStack(alignment: .center) {
                     Map(position: $mapPosition, interactionModes: .zoom)
                         .mapStyle(.imagery)
                         .frame(height: Self.mapHeight)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .clipShape(RoundedRectangle(cornerRadius: SparkTheme.Radius.sm, style: .continuous))
                     if let url = currentFrameURL {
                         AsyncImage(url: url) { phase in
                             switch phase {
@@ -62,17 +64,17 @@ struct StormMapView: View {
                                 EmptyView()
                             case .empty:
                                 ProgressView()
-                                    .tint(.white)
+                                    .tint(colors.ctaCyan)
                             @unknown default:
                                 EmptyView()
                             }
                         }
                         .frame(height: Self.mapHeight)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .clipShape(RoundedRectangle(cornerRadius: SparkTheme.Radius.sm, style: .continuous))
                         .allowsHitTesting(false)
                     } else {
                         ProgressView()
-                            .tint(.white)
+                            .tint(colors.ctaCyan)
                     }
                 }
                 if !frames.isEmpty {
@@ -81,25 +83,24 @@ struct StormMapView: View {
                 HStack(spacing: 6) {
                     if let time = selectedFrameTime {
                         Text(Self.timeFormatter.string(from: time))
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(.white.opacity(0.7))
+                            .font(SparkTheme.Typography.micro)
+                            .foregroundStyle(colors.textOnDark)
                     }
                     Text("·")
-                        .foregroundStyle(.white.opacity(0.5))
+                        .foregroundStyle(colors.textOnDark.opacity(0.7))
                     Text("Radar · RainViewer")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.6))
+                        .font(SparkTheme.Typography.micro)
+                        .foregroundStyle(colors.textOnDark.opacity(0.8))
                 }
             } else {
                 Text("No location found")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(.white)
+                    .font(SparkTheme.Typography.body)
+                    .foregroundStyle(colors.textInverse)
                     .frame(height: Self.mapHeight)
                     .frame(maxWidth: .infinity)
             }
         }
-        .padding(16)
-        .background(RoundedRectangle(cornerRadius: 20).fill(Color.white.opacity(0.15)))
+        .sparkPlanCard()
         .onAppear { updateMapPosition() }
         .onChange(of: coordinate?.latitude) { updateMapPosition() }
         .onChange(of: coordinate?.longitude) { updateMapPosition() }
@@ -119,19 +120,20 @@ struct StormMapView: View {
         let range = Double(max(0, count - 1))
         return HStack(spacing: 12) {
             Text("Older")
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(.white.opacity(0.5))
-            Slider(
+                .font(SparkTheme.Typography.micro)
+                .foregroundStyle(colors.textOnDark)
+            SparkCyanSlider(
                 value: Binding(
                     get: { count > 0 ? Double(selectedFrameIndex) : 0 },
                     set: { selectedFrameIndex = min(count - 1, max(0, Int($0.rounded()))) }
                 ),
-                in: 0...max(0, range)
+                range: 0...max(0, range),
+                accent: colors.ctaCyan,
+                track: colors.textOnDark.opacity(0.35)
             )
-            .tint(.white.opacity(0.8))
             Text("Newer")
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(.white.opacity(0.5))
+                .font(SparkTheme.Typography.micro)
+                .foregroundStyle(colors.textOnDark)
         }
     }
 
@@ -139,5 +141,46 @@ struct StormMapView: View {
         guard let coord = coordinate else { return }
         let region = MKCoordinateRegion(center: coord, span: Self.mapSpan)
         mapPosition = .region(region)
+    }
+}
+
+/// Cyan thumb only (`SparkColors.ctaCyan`); track uses a neutral theme line on both sides.
+private struct SparkCyanSlider: UIViewRepresentable {
+    @Binding var value: Double
+    var range: ClosedRange<Double>
+    var accent: Color
+    var track: Color
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(value: $value)
+    }
+
+    func makeUIView(context: Context) -> UISlider {
+        let slider = UISlider(frame: .zero)
+        slider.addTarget(context.coordinator, action: #selector(Coordinator.valueChanged(_:)), for: .valueChanged)
+        return slider
+    }
+
+    func updateUIView(_ slider: UISlider, context: Context) {
+        slider.minimumValue = Float(range.lowerBound)
+        slider.maximumValue = Float(max(range.upperBound, range.lowerBound))
+        if slider.value != Float(value) {
+            slider.value = Float(value)
+        }
+        slider.minimumTrackTintColor = UIColor(track)
+        slider.maximumTrackTintColor = UIColor(track)
+        slider.thumbTintColor = UIColor(accent)
+    }
+
+    final class Coordinator: NSObject {
+        private var value: Binding<Double>
+
+        init(value: Binding<Double>) {
+            self.value = value
+        }
+
+        @objc func valueChanged(_ sender: UISlider) {
+            value.wrappedValue = Double(sender.value)
+        }
     }
 }
